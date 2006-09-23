@@ -26,6 +26,7 @@ class FlickRPC:
         kwargs['api_sig'] = sig
         
     def __getTokenFile(self):
+        """Get the filename that contains the authentication token for the API key"""
         return os.path.expanduser(os.path.join("~", ".flickr", self.api_key, "auth.xml"))
 
     def __getattr__(self, method, **kwargs):
@@ -46,6 +47,9 @@ class FlickRPC:
         return caller
     
     def authenticate(self):
+        """Attemps to log in to Flickr.  This will open a web browser if
+        required. The return value is a Twisted Deferred object that callbacks
+        when authentication is complete."""
         filename = self.__getTokenFile()
         if os.path.exists(filename):
             e = ElementTree.parse(filename).getroot()
@@ -75,25 +79,25 @@ class FlickRPC:
                 f.close()
                 # Callback to the user
                 d.callback(True)
+            # TODO: chain up the error callbacks too
             self.auth_getToken(frob=frob).addCallback(gotToken)
         
+        # TODO: chain up the error callbacks too
         flickr.auth_getFrob().addCallback(gotFrob)
         return d
 
 
 if __name__ == "__main__":
     flickr = FlickRPC("c53cebd15ed936073134cec858036f1d", "7db1b8ef68979779", "read")
-    def done(authenticated):
+    def connected(authenticated):
         def gotInfo(p):
             print "Got photo title '%s'" % p.find("title").text
         def gotFavs(p):
             print "Got favourites:"
             for photo in p.findall("photo"):
-                print "  %s" % photo.get('title')
-            reactor.stop()
-        
+                print "  %s" % photo.get('title')        
         flickr.favorites_getList().addCallback(gotFavs)
         flickr.photos_getInfo(photo_id="209423026").addCallback(gotInfo)
 
-    flickr.authenticate().addCallback(done)
+    flickr.authenticate().addCallback(connected)
     reactor.run()
