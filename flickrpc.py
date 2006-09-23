@@ -28,14 +28,22 @@ class FlickRPC:
     def __getTokenFile(self):
         return os.path.expanduser(os.path.join("~", ".flickr", self.api_key, "auth.xml"))
 
-    def call(self, method, **kwargs):
-        d = defer.Deferred()
-        self.__sign(kwargs)
-        # TODO: do I have to convert a Unicode string to UTF-8 to parse it?
-        self.proxy.callRemote(method, kwargs).addCallback(
-            lambda data: d.callback(ElementTree.XML(data.encode("utf-8"))))
-        return d
-
+    def __getattr__(self, method, **kwargs):
+        # Magic automatic method generation. Take the Flickr method name
+        # (flickr.favorites.getList), remove the flickr. prefix
+        # (favorites.getList) and replace all . with _ (favorite_getList).  Then
+        # pass keyword arguments as required.  The return value is a Twisted
+        # Deferred object.
+        def caller(method=method, **kwargs):
+            method = "flickr." + method.replace("_", ".")
+            d = defer.Deferred()
+            self.__sign(kwargs)
+            # TODO: do I have to convert a Unicode string to UTF-8 to parse it?
+            self.proxy.callRemote(method, kwargs).addCallback(
+                lambda data: d.callback(ElementTree.XML(data.encode("utf-8"))))
+            return d
+        # TODO: cache the method objectsa
+        return caller
     
     def authenticate(self):
         filename = self.__getTokenFile()
@@ -67,9 +75,9 @@ class FlickRPC:
                 f.close()
                 # Callback to the user
                 d.callback(True)
-            self.call("flickr.auth.getToken", frob=frob).addCallback(gotToken)
+            self.auth_getToken(frob=frob).addCallback(gotToken)
         
-        flickr.call("flickr.auth.getFrob").addCallback(gotFrob)
+        flickr.auth_getFrob().addCallback(gotFrob)
         return d
 
 
@@ -77,13 +85,15 @@ if __name__ == "__main__":
     flickr = FlickRPC("c53cebd15ed936073134cec858036f1d", "7db1b8ef68979779", "read")
     def done(authenticated):
         def gotInfo(p):
-            print p.find("title").text
+            print "Got photo title '%s'" % p.find("title").text
         def gotFavs(p):
+            print "Got favourites:"
             for photo in p.findall("photo"):
-                print photo.get('title')
+                print "  %s" % photo.get('title')
             reactor.stop()
-        flickr.call("flickr.favorites.getList").addCallback(gotFavs)
-        #flickr.call("flickr.photos.getInfo", photo_id="209423026").addCallback(gotInfo)
-    
+        
+        flickr.favorites_getList().addCallback(gotFavs)
+        flickr.photos_getInfo(photo_id="209423026").addCallback(gotInfo)
+
     flickr.authenticate().addCallback(done)
     reactor.run()
