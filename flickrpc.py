@@ -12,7 +12,7 @@ class FlickRPC:
         self.token = None
 
         self.__methods = {}
-        
+    
     def __sign(self, kwargs):
         kwargs['api_key'] = self.api_key
         # If authenticating we don't yet have a token
@@ -24,11 +24,11 @@ class FlickRPC:
         s.sort()
         sig = md5.new(self.secret + ''.join(s)).hexdigest()
         kwargs['api_sig'] = sig
-        
+    
     def __getTokenFile(self):
         """Get the filename that contains the authentication token for the API key"""
         return os.path.expanduser(os.path.join("~", ".flickr", self.api_key, "auth.xml"))
-
+    
     def __getattr__(self, method, **kwargs):
         """Magic automatic method generation. Take the Flickr method name
         (flickr.favorites.getList), remove the flickr. prefix
@@ -66,7 +66,7 @@ class FlickRPC:
             url = "http://flickr.com/services/auth/?api_key=%(api_key)s&perms=%(perms)s&frob=%(frob)s&api_sig=%(api_sig)s" % keys
             # TODO: signal or something
             os.spawnlp(os.P_WAIT, "epiphany", "epiphany", "-p", url)
-
+            
             def gotToken(e):
                 # Set the token
                 self.token = e.find("token").text
