@@ -10,6 +10,8 @@ class FlickRPC:
         self.secret = secret
         self.perms = perms
         self.token = None
+
+        self.__methods = {}
         
     def __sign(self, kwargs):
         kwargs['api_key'] = self.api_key
@@ -28,21 +30,22 @@ class FlickRPC:
         return os.path.expanduser(os.path.join("~", ".flickr", self.api_key, "auth.xml"))
 
     def __getattr__(self, method, **kwargs):
-        # Magic automatic method generation. Take the Flickr method name
-        # (flickr.favorites.getList), remove the flickr. prefix
-        # (favorites.getList) and replace all . with _ (favorite_getList).  Then
-        # pass keyword arguments as required.  The return value is a Twisted
-        # Deferred object.
-        def caller(method=method, **kwargs):
-            method = "flickr." + method.replace("_", ".")
-            d = defer.Deferred()
-            self.__sign(kwargs)
-            # TODO: do I have to convert a Unicode string to UTF-8 to parse it?
-            self.proxy.callRemote(method, kwargs).addCallback(
-                lambda data: d.callback(ElementTree.XML(data.encode("utf-8"))))
-            return d
-        # TODO: cache the method objectsa
-        return caller
+        """Magic automatic method generation. Take the Flickr method name
+        (flickr.favorites.getList), remove the flickr. prefix
+        (favorites.getList) and replace all . with _ (favorite_getList).  Then
+        pass keyword arguments as required.  The return value is a Twisted
+        Deferred object"""
+        if not self.__methods.has_key(method):
+            def proxy(method=method, **kwargs):
+                method = "flickr." + method.replace("_", ".")
+                d = defer.Deferred()
+                self.__sign(kwargs)
+                # TODO: do I have to convert a Unicode string to UTF-8 to parse it?
+                self.proxy.callRemote(method, kwargs).addCallback(
+                    lambda data: d.callback(ElementTree.XML(data.encode("utf-8"))))
+                return d
+            self.__methods[method] = proxy
+        return self.__methods[method]
     
     def authenticate(self):
         """Attemps to log in to Flickr.  This will open a web browser if
