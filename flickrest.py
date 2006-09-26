@@ -31,9 +31,9 @@ class FlickREST:
         def cb(data):
             xml = ElementTree.XML(data.encode("utf-8"))
             d.callback(xml)
-            client.getPage(FlickREST.endpoint, method="POST",
-                           headers={"Content-Type": "application/x-www-form-urlencoded"},
-                           postdata=urllib.urlencode(kwargs)).addCallback(cb)
+        client.getPage(FlickREST.endpoint, method="POST",
+                       headers={"Content-Type": "application/x-www-form-urlencoded"},
+                       postdata=urllib.urlencode(kwargs)).addCallback(cb)
         return d
         
 if __name__ == "__main__":
