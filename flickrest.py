@@ -33,7 +33,7 @@ class FlickREST:
             d.callback(xml)
             client.getPage(FlickREST.endpoint, method="POST",
                            headers={"Content-Type": "application/x-www-form-urlencoded"},
-                       postdata=urllib.urlencode(kwargs)).addCallback(cb)
+                           postdata=urllib.urlencode(kwargs)).addCallback(cb)
         return d
         
 if __name__ == "__main__":
