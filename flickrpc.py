@@ -52,7 +52,6 @@ class FlickRPC:
         pass keyword arguments as required.  The return value is a Twisted
         Deferred object"""
         if not self.__methods.has_key(method):
-            print "generating %s" % method
             real_method = "flickr." + method.replace("_", ".")
             def proxy(method=real_method, **kwargs):
                 d = defer.Deferred()
