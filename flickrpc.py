@@ -2,7 +2,7 @@ from twisted.python.failure import Failure
 from twisted.internet import defer
 from twisted.web.xmlrpc import Proxy
 from elementtree import ElementTree
-import os, md5
+import os, md5, xmlrpclib
 
 class FlickrError(Exception):
     def __init__(self, code, message):
@@ -15,19 +15,26 @@ class FlickrError(Exception):
 
 class FlickRPC:    
     def __init__(self, api_key, secret, perms="read"):
+        self.__methods = {}
         self.proxy = Proxy("http://api.flickr.com/services/xmlrpc/")
         self.api_key = api_key
         self.secret = secret
         self.perms = perms
         self.token = None
 
-        self.__methods = {}
-
+    def __repr__(self):
+        return self.__str__()
+    def __str__(self):
+        return "FlickRPC"
+    
     @staticmethod
     def __failure(exception):
         """Take a xmlrpclib.Fault object and return a new Twisted Failure object."""
-        return Failure(FlickrError(exception.faultCode,
-                                   exception.faultString))
+        if isinstance(exception, xmlrpclib.Fault):
+            return Failure(FlickrError(exception.faultCode,
+                                       exception.faultString))
+        else:
+            return Failure(FlickrError(0, str(exception)))
     
     def __sign(self, kwargs):
         kwargs['api_key'] = self.api_key
