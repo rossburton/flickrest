@@ -1,7 +1,17 @@
 import md5, urllib
 from twisted.internet import defer
+from twisted.python.failure import Failure
 from twisted.web import client
 from elementtree import ElementTree
+
+class FlickrError(Exception):
+    def __init__(self, code, message):
+        Exception.__init__(self)
+        self.code = int(code)
+        self.message = message
+    
+    def __str__(self):
+        return "%d: %s" % (self.code, self.message)
 
 class FlickREST:
     endpoint = "http://api.flickr.com/services/rest/?"
@@ -30,7 +40,11 @@ class FlickREST:
         d = defer.Deferred()
         def cb(data):
             xml = ElementTree.XML(data.encode("utf-8"))
-            d.callback(xml)
+            if xml.get("stat") == "ok":
+                d.callback(xml)
+            else:
+                err = xml.find("err")
+                d.errback(Failure(FlickrError(err.get("code"), err.get("msg"))))
         client.getPage(FlickREST.endpoint, method="POST",
                        headers={"Content-Type": "application/x-www-form-urlencoded"},
                        postdata=urllib.urlencode(kwargs)).addCallback(cb)
@@ -42,5 +56,7 @@ if __name__ == "__main__":
     d = flickr.call("flickr.auth.getFrob")
     def foo(p):
         print p
-    d.addCallback(foo)
+    def error(failure):
+        print failure
+    d.addCallbacks(foo, error)
     reactor.run()
