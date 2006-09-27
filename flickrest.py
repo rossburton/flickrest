@@ -45,9 +45,11 @@ class FlickREST:
             else:
                 err = xml.find("err")
                 d.errback(Failure(FlickrError(err.get("code"), err.get("msg"))))
+        def errcb(fault):
+                d.errback(fault)
         client.getPage(FlickREST.endpoint, method="POST",
                        headers={"Content-Type": "application/x-www-form-urlencoded"},
-                       postdata=urllib.urlencode(kwargs)).addCallback(cb)
+                       postdata=urllib.urlencode(kwargs)).addCallbacks(cb, errcb)
         return d
         
 if __name__ == "__main__":
