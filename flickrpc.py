@@ -1,7 +1,17 @@
+from twisted.python.failure import Failure
 from twisted.internet import defer
 from twisted.web.xmlrpc import Proxy
 from elementtree import ElementTree
 import os, md5
+
+class FlickrError(Exception):
+    def __init__(self, code, message):
+        Exception.__init__(self)
+        self.code = int(code)
+        self.message = message
+    
+    def __str__(self):
+        return "%d: %s" % (self.code, self.message)
 
 class FlickRPC:    
     def __init__(self, api_key, secret, perms="read"):
@@ -12,6 +22,12 @@ class FlickRPC:
         self.token = None
 
         self.__methods = {}
+
+    @staticmethod
+    def __failure(exception):
+        """Take a xmlrpclib.Fault object and return a new Twisted Failure object."""
+        return Failure(FlickrError(exception.faultCode,
+                                   exception.faultString))
     
     def __sign(self, kwargs):
         kwargs['api_key'] = self.api_key
@@ -41,8 +57,9 @@ class FlickRPC:
                 d = defer.Deferred()
                 self.__sign(kwargs)
                 # TODO: do I have to convert a Unicode string to UTF-8 to parse it?
-                self.proxy.callRemote(method, kwargs).addCallback(
-                    lambda data: d.callback(ElementTree.XML(data.encode("utf-8"))))
+                self.proxy.callRemote(method, kwargs).addCallbacks(
+                    lambda data: d.callback(ElementTree.XML(data.encode("utf-8"))),
+                    lambda fault: d.errback(FlickRPC.__failure(fault.value)))
                 return d
             self.__methods[method] = proxy
         return self.__methods[method]
