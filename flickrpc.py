@@ -36,8 +36,8 @@ class FlickRPC:
         pass keyword arguments as required.  The return value is a Twisted
         Deferred object"""
         if not self.__methods.has_key(method):
+            method = "flickr." + method.replace("_", ".")
             def proxy(method=method, **kwargs):
-                method = "flickr." + method.replace("_", ".")
                 d = defer.Deferred()
                 self.__sign(kwargs)
                 # TODO: do I have to convert a Unicode string to UTF-8 to parse it?
