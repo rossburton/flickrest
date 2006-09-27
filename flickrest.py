@@ -1,4 +1,4 @@
-import md5, urllib
+import md5, os, urllib
 from twisted.internet import defer
 from twisted.python.failure import Failure
 from twisted.web import client
@@ -22,6 +22,10 @@ class FlickREST:
         self.secret = secret
         self.perms = perms
         self.token = None
+
+    def __getTokenFile(self):
+        """Get the filename that contains the authentication token for the API key"""
+        return os.path.expanduser(os.path.join("~", ".flickr", self.api_key, "auth.xml"))
     
     def __sign(self, kwargs):
         kwargs['api_key'] = self.api_key
@@ -36,15 +40,15 @@ class FlickREST:
         kwargs['api_sig'] = sig
 
     def __getattr__(self, method, **kwargs):
+        method = "flickr." + method.replace("_", ".")
         if not self.__methods.has_key(method):
-            real_method = "flickr." + method.replace("_", ".")
-            def proxy(method=real_method, **kwargs):
+            def proxy(method=method, **kwargs):
+                d = defer.Deferred()
                 kwargs["method"] = method
                 self.__sign(kwargs)
-                d = defer.Deferred()
                 def cb(data):
-                    xml = ElementTree.XML(data.encode("utf-8"))
-                    if xml.get("stat") == "ok":
+                    xml = ElementTree.XML(data)
+                    if xml.tag == "rsp" and xml.get("stat") == "ok":
                         d.callback(xml)
                     else:
                         err = xml.find("err")
@@ -57,14 +61,59 @@ class FlickREST:
                 return d
             self.__methods[method] = proxy
         return self.__methods[method]
+
+    def authenticate(self):
+        """Attemps to log in to Flickr.  This will open a web browser if
+        required. The return value is a Twisted Deferred object that callbacks
+        when authentication is complete."""
+        filename = self.__getTokenFile()
+        if os.path.exists(filename):
+            e = ElementTree.parse(filename).getroot()
+            self.token = e.find("token").text
+            return defer.succeed(True)
         
+        d = defer.Deferred()
+        def gotFrob(xml):
+            frob = xml.text
+            keys = { 'perms': self.perms,
+                     'frob': frob }
+            self.__sign(keys)
+            url = "http://flickr.com/services/auth/?api_key=%(api_key)s&perms=%(perms)s&frob=%(frob)s&api_sig=%(api_sig)s" % keys
+            # TODO: signal or something
+            os.spawnlp(os.P_WAIT, "epiphany", "epiphany", "-p", url)
+            
+            def gotToken(e):
+                # Set the token
+                self.token = e.find("token").text
+                # Cache the authentication
+                filename = self.__getTokenFile()
+                path = os.path.dirname(filename)
+                if not os.path.exists(path):
+                    os.makedirs(path, 0700)
+                f = file(filename, "w")
+                f.write(ElementTree.tostring(e.find("auth")))
+                f.close()
+                # Callback to the user
+                d.callback(True)
+            # TODO: chain up the error callbacks too
+            self.auth_getToken(frob=frob).addCallback(gotToken)
+        
+        # TODO: chain up the error callbacks too
+        flickr.auth_getFrob().addCallback(gotFrob)
+        return d
+
 if __name__ == "__main__":
     from twisted.internet import reactor
     flickr = FlickREST("c53cebd15ed936073134cec858036f1d", "7db1b8ef68979779", "read")
-    d = flickr.auth_getFrob()
-    def foo(p):
-        print ElementTree.dump(p)
-    def error(failure):
-        print failure
-    d.addCallbacks(foo, error)
+    def connected(authenticated):
+        def gotInfo(p):
+            print "Got photo title '%s'" % p.find("photo/title").text
+        def gotFavs(p):
+            print "Got favourites:"
+            for photo in p.findall("photos/photo"):
+                print "  %s" % photo.get('title')
+        flickr.favorites_getList().addCallback(gotFavs)
+        flickr.photos_getInfo(photo_id="209423026").addCallback(gotInfo)
+
+    flickr.authenticate().addCallback(connected)
     reactor.run()
