@@ -51,9 +51,9 @@ class FlickRPC:
         (favorites.getList) and replace all . with _ (favorite_getList).  Then
         pass keyword arguments as required.  The return value is a Twisted
         Deferred object"""
+        method = "flickr." + method.replace("_", ".")
         if not self.__methods.has_key(method):
-            real_method = "flickr." + method.replace("_", ".")
-            def proxy(method=real_method, **kwargs):
+            def proxy(method=method, **kwargs):
                 d = defer.Deferred()
                 self.__sign(kwargs)
                 # TODO: do I have to convert a Unicode string to UTF-8 to parse it?
