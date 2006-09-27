@@ -17,6 +17,7 @@ class FlickREST:
     endpoint = "http://api.flickr.com/services/rest/?"
     
     def __init__(self, api_key, secret, perms="read"):
+        self.__methods = {}
         self.api_key = api_key
         self.secret = secret
         self.perms = perms
@@ -34,30 +35,35 @@ class FlickREST:
         sig = md5.new(self.secret + ''.join(s)).hexdigest()
         kwargs['api_sig'] = sig
 
-    def call(self, method, **kwargs):
-        kwargs["method"] = method
-        self.__sign(kwargs)
-        d = defer.Deferred()
-        def cb(data):
-            xml = ElementTree.XML(data.encode("utf-8"))
-            if xml.get("stat") == "ok":
-                d.callback(xml)
-            else:
-                err = xml.find("err")
-                d.errback(Failure(FlickrError(err.get("code"), err.get("msg"))))
-        def errcb(fault):
-                d.errback(fault)
-        client.getPage(FlickREST.endpoint, method="POST",
-                       headers={"Content-Type": "application/x-www-form-urlencoded"},
-                       postdata=urllib.urlencode(kwargs)).addCallbacks(cb, errcb)
-        return d
+    def __getattr__(self, method, **kwargs):
+        if not self.__methods.has_key(method):
+            real_method = "flickr." + method.replace("_", ".")
+            def proxy(method=real_method, **kwargs):
+                kwargs["method"] = method
+                self.__sign(kwargs)
+                d = defer.Deferred()
+                def cb(data):
+                    xml = ElementTree.XML(data.encode("utf-8"))
+                    if xml.get("stat") == "ok":
+                        d.callback(xml)
+                    else:
+                        err = xml.find("err")
+                        d.errback(Failure(FlickrError(err.get("code"), err.get("msg"))))
+                def errcb(fault):
+                    d.errback(fault)
+                client.getPage(FlickREST.endpoint, method="POST",
+                               headers={"Content-Type": "application/x-www-form-urlencoded"},
+                               postdata=urllib.urlencode(kwargs)).addCallbacks(cb, errcb)
+                return d
+            self.__methods[method] = proxy
+        return self.__methods[method]
         
 if __name__ == "__main__":
     from twisted.internet import reactor
     flickr = FlickREST("c53cebd15ed936073134cec858036f1d", "7db1b8ef68979779", "read")
-    d = flickr.call("flickr.auth.getFrob")
+    d = flickr.auth_getFrob()
     def foo(p):
-        print p
+        print ElementTree.dump(p)
     def error(failure):
         print failure
     d.addCallbacks(foo, error)
