@@ -50,9 +50,12 @@ class FlickREST:
                     xml = ElementTree.XML(data)
                     if xml.tag == "rsp" and xml.get("stat") == "ok":
                         d.callback(xml)
-                    else:
+                    elif xml.tag == "rsp" and xml.get("stat") == "fail":
                         err = xml.find("err")
                         d.errback(Failure(FlickrError(err.get("code"), err.get("msg"))))
+                    else:
+                        # Fake an error in this case
+                        d.errback(Failure(FlickrError(0, "Invalid response")))
                 def errcb(fault):
                     d.errback(fault)
                 client.getPage(FlickREST.endpoint, method="POST",
