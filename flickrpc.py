@@ -34,7 +34,7 @@ class FlickRPC:
             return Failure(FlickrError(exception.faultCode,
                                        exception.faultString))
         else:
-            return Failure(FlickrError(0, str(exception)))
+            return Failure(exception)
     
     def __sign(self, kwargs):
         kwargs['api_key'] = self.api_key
