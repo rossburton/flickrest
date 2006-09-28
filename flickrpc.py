@@ -13,7 +13,7 @@ class FlickrError(Exception):
     def __str__(self):
         return "%d: %s" % (self.code, self.message)
 
-class FlickRPC:    
+class Flickr:
     def __init__(self, api_key, secret, perms="read"):
         self.__methods = {}
         self.proxy = Proxy("http://api.flickr.com/services/xmlrpc/")
@@ -66,7 +66,7 @@ class FlickRPC:
                 # TODO: do I have to convert a Unicode string to UTF-8 to parse it?
                 self.proxy.callRemote(method, kwargs).addCallbacks(
                     lambda data: d.callback(ElementTree.XML(data.encode("utf-8"))),
-                    lambda fault: d.errback(FlickRPC.__failure(fault.value)))
+                    lambda fault: d.errback(Flickr.__failure(fault.value)))
                 return d
             self.__methods[method] = proxy
         return self.__methods[method]

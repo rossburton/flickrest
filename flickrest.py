@@ -13,7 +13,7 @@ class FlickrError(Exception):
     def __str__(self):
         return "%d: %s" % (self.code, self.message)
 
-class FlickREST:
+class Flickr:
     endpoint = "http://api.flickr.com/services/rest/?"
     
     def __init__(self, api_key, secret, perms="read"):
@@ -42,7 +42,7 @@ class FlickREST:
     def __call(self, method, kwargs):
         kwargs["method"] = method
         self.__sign(kwargs)
-        return client.getPage(FlickREST.endpoint, method="POST",
+        return client.getPage(Flickr.endpoint, method="POST",
                               headers={"Content-Type": "application/x-www-form-urlencoded"},
                               postdata=urllib.urlencode(kwargs))
         
@@ -105,19 +105,3 @@ class FlickREST:
         # TODO: chain up the error callbacks too
         flickr.auth_getFrob().addCallback(gotFrob)
         return d
-
-if __name__ == "__main__":
-    from twisted.internet import reactor
-    flickr = FlickREST("c53cebd15ed936073134cec858036f1d", "7db1b8ef68979779", "read")
-    def connected(authenticated):
-        def gotInfo(p):
-            print "Got photo title '%s'" % p.find("photo/title").text
-        def gotFavs(p):
-            print "Got favourites:"
-            for photo in p.findall("photos/photo"):
-                print "  %s" % photo.get('title')
-        flickr.favorites_getList().addCallback(gotFavs)
-        flickr.photos_getInfo(photo_id="209423026").addCallback(gotInfo)
-
-    flickr.authenticate().addCallback(connected)
-    reactor.run()
