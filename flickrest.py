@@ -39,13 +39,18 @@ class FlickREST:
         sig = md5.new(self.secret + ''.join(s)).hexdigest()
         kwargs['api_sig'] = sig
 
+    def __call(self, method, kwargs):
+        kwargs["method"] = method
+        self.__sign(kwargs)
+        return client.getPage(FlickREST.endpoint, method="POST",
+                              headers={"Content-Type": "application/x-www-form-urlencoded"},
+                              postdata=urllib.urlencode(kwargs))
+        
     def __getattr__(self, method, **kwargs):
         method = "flickr." + method.replace("_", ".")
         if not self.__methods.has_key(method):
             def proxy(method=method, **kwargs):
                 d = defer.Deferred()
-                kwargs["method"] = method
-                self.__sign(kwargs)
                 def cb(data):
                     xml = ElementTree.XML(data)
                     if xml.tag == "rsp" and xml.get("stat") == "ok":
@@ -56,11 +61,7 @@ class FlickREST:
                     else:
                         # Fake an error in this case
                         d.errback(Failure(FlickrError(0, "Invalid response")))
-                def errcb(fault):
-                    d.errback(fault)
-                client.getPage(FlickREST.endpoint, method="POST",
-                               headers={"Content-Type": "application/x-www-form-urlencoded"},
-                               postdata=urllib.urlencode(kwargs)).addCallbacks(cb, errcb)
+                self.__call(method, kwargs).addCallbacks(cb, lambda fault: d.errback(fault))
                 return d
             self.__methods[method] = proxy
         return self.__methods[method]
