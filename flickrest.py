@@ -1,4 +1,4 @@
-import md5, os, urllib
+import md5, os, mimetools, urllib
 from twisted.internet import defer
 from twisted.python.failure import Failure
 from twisted.web import client
@@ -69,6 +69,52 @@ class Flickr:
             self.__methods[method] = proxy
         return self.__methods[method]
 
+    @staticmethod
+    def __encodeForm(inputs):
+        """
+        Takes a dict of inputs and returns a multipart/form-data string
+        containing the utf-8 encoded data. Keys must be strings, values
+        can be either strings or file-like objects.
+        """
+        boundary = mimetools.choose_boundary()
+        lines = [boundary]
+        for key, val in inputs.items():
+            header = 'Content-Disposition: form-data; name="%s"' % key
+            if hasattr(val, 'name'):
+                header += '; filename="%s"' % os.path.split(val.name)[1]
+            lines.append(header)
+            if hasattr(val, 'read'):
+                lines.append(val.read())
+            else:
+                lines.append(val.encode('utf-8'))
+            lines.append('')
+            lines.append(boundary)
+        return (boundary, '\r\n'.join(lines))
+    
+    # TODO: add the other arguments
+    def upload(self, filename=None, imageData=None):
+        # Sanity check the arguments
+        if filename is None and imageData is None:
+            raise ValueError("Need to pass either filename or imageData")
+        if filename and imageData:
+            raise ValueError("Cannot pass both filename and imageData")
+
+        kwargs = {}
+        self.__sign(kwargs)
+        if imageData:
+            # TODO: this wont work as encodeForm will encode it as UTF-8
+            kwargs['photo'] = imageData
+        else:
+            kwargs['photo'] = file(filename, "rb")
+
+        (boundary, form) = self.__encodeForm(kwargs)
+        headers= {
+            "Content-Type": "multipart/form-data; boundary=%s" % boundary,
+            "Content-Length": str(len(form))
+            }
+        return client.getPage("http://api.flickr.com/services/upload/", method="POST",
+                              headers=headers, postdata=form)
+    
     def authenticate(self):
         """Attemps to log in to Flickr.  This will open a web browser if
         required. The return value is a Twisted Deferred object that callbacks
