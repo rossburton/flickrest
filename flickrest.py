@@ -23,6 +23,9 @@ class Flickr:
         self.perms = perms
         self.token = None
 
+    def __repr__(self):
+        return "<FlickREST>"
+    
     def __getTokenFile(self):
         """Get the filename that contains the authentication token for the API key"""
         return os.path.expanduser(os.path.join("~", ".flickr", self.api_key, "auth.xml"))
