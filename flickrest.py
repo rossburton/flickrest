@@ -76,12 +76,12 @@ class Flickr:
         filename = self.__getTokenFile()
         if os.path.exists(filename):
             e = ElementTree.parse(filename).getroot()
-            self.token = e.find("token").text
+            self.token = e.find("auth/token").text
             return defer.succeed(True)
         
         d = defer.Deferred()
         def gotFrob(xml):
-            frob = xml.text
+            frob = xml.find("frob").text
             keys = { 'perms': self.perms,
                      'frob': frob }
             self.__sign(keys)
@@ -91,14 +91,14 @@ class Flickr:
             
             def gotToken(e):
                 # Set the token
-                self.token = e.find("token").text
+                self.token = e.find("auth/token").text
                 # Cache the authentication
                 filename = self.__getTokenFile()
                 path = os.path.dirname(filename)
                 if not os.path.exists(path):
                     os.makedirs(path, 0700)
                 f = file(filename, "w")
-                f.write(ElementTree.tostring(e.find("auth")))
+                f.write(ElementTree.tostring(e))
                 f.close()
                 # Callback to the user
                 d.callback(True)
@@ -106,5 +106,5 @@ class Flickr:
             self.auth_getToken(frob=frob).addCallback(gotToken)
         
         # TODO: chain up the error callbacks too
-        flickr.auth_getFrob().addCallback(gotFrob)
+        self.auth_getFrob().addCallback(gotFrob)
         return d
