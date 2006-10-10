@@ -13,6 +13,12 @@ class FlickrError(Exception):
     def __str__(self):
         return "%d: %s" % (self.code, self.message)
 
+(SIZE_SQUARE,
+ SIZE_THUMB,
+ SIZE_SMALL,
+ SIZE_MEDIUM,
+ SIZE_LARGE) = range (0, 5)
+
 class Flickr:
     endpoint = "http://api.flickr.com/services/rest/?"
     
@@ -154,3 +160,21 @@ class Flickr:
         # TODO: chain up the error callbacks too
         self.auth_getFrob().addCallback(gotFrob)
         return d
+
+    @staticmethod
+    def get_photo_url(photo, size=SIZE_MEDIUM):
+        if photo is None:
+            return None
+
+        # Handle medium as the default
+        suffix = ""
+        if size == SIZE_SQUARE:
+            suffix = "_s"
+        elif size == SIZE_THUMB:
+            suffix = "_t"
+        elif size == SIZE_SMALL:
+            suffix = "_m"
+        elif size == SIZE_LARGE:
+            suffix = "_b"
+
+        return "http://static.flickr.com/%s/%s_%s%s.jpg" % (photo.get("server"), photo.get("id"), photo.get("secret"), suffix)
