@@ -87,16 +87,20 @@ class Flickr:
         for key, val in inputs.items():
             lines.append("--" + boundary.encode("utf-8"))
             header = 'Content-Disposition: form-data; name="%s";' % key
+            # Objects with name value are probably files
             if hasattr(val, 'name'):
                 header += 'filename="%s";' % os.path.split(val.name)[1]
                 lines.append(header)
                 header = "Content-Type: application/octet-stream"
             lines.append(header)
             lines.append("")
+            # If there is a read attribute, it is a file-like object, so read all the data
             if hasattr(val, 'read'):
                 lines.append(val.read())
+            # Otherwise just hope it is string-like and encode it to UTF-8
             else:
                 lines.append(val.encode('utf-8'))
+        # Add final boundary.
         lines.append("--" + boundary.encode("utf-8"))
         return (boundary, '\r\n'.join(lines))
     
