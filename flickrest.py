@@ -101,7 +101,7 @@ class Flickr:
         return (boundary, '\r\n'.join(lines))
     
     # TODO: add the other arguments
-    def upload(self, filename=None, imageData=None):
+    def upload(self, filename=None, imageData=None, title=None, desc=None, tags=None):
         # Sanity check the arguments
         if filename is None and imageData is None:
             raise ValueError("Need to pass either filename or imageData")
@@ -109,7 +109,14 @@ class Flickr:
             raise ValueError("Cannot pass both filename and imageData")
 
         kwargs = {}
+        if title:
+            kwargs['title'] = title
+        if desc:
+            kwargs['description'] = desc
+        if tags:
+            kwargs['tags'] = tags
         self.__sign(kwargs)
+        
         if imageData:
             # TODO: this wont work as encodeForm will encode it as UTF-8
             kwargs['photo'] = imageData

@@ -17,6 +17,6 @@ if __name__ == "__main__":
             print p
         flickr.photos_getInfo(photo_id="209423026").addCallback(gotInfo)
         #flickr.favorites_getList().addCallback(gotFavs)
-        #flickr.upload(filename="/home/ross/Pictures/Photos/Artwork/snow-grass.jpg").addCallback(uploaded)
+        #flickr.upload(filename="/home/ross/Pictures/Photos/Artwork/snow-grass.jpg", title="Snow Grass", desc="some grass", tags="test green grass").addCallback(uploaded)
     flickr.authenticate().addCallback(connected)
     reactor.run()
