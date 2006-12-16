@@ -105,7 +105,7 @@ class Flickr:
         lines.append("--" + boundary.encode("utf-8"))
         return (boundary, '\r\n'.join(lines))
     
-    # TODO: add the other arguments
+    # TODO: add is_public, is_family, is_friends arguments
     def upload(self, filename=None, imageData=None, title=None, desc=None, tags=None):
         # Sanity check the arguments
         if filename is None and imageData is None:
