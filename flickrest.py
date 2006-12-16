@@ -97,7 +97,8 @@ class Flickr:
             # If there is a read attribute, it is a file-like object, so read all the data
             if hasattr(val, 'read'):
                 lines.append(val.read())
-            # Otherwise just hope it is string-like and encode it to UTF-8
+            # Otherwise just hope it is string-like and encode it to
+            # UTF-8. TODO: this breaks when val is binary data.
             else:
                 lines.append(val.encode('utf-8'))
         # Add final boundary.
@@ -122,7 +123,6 @@ class Flickr:
         self.__sign(kwargs)
         
         if imageData:
-            # TODO: this wont work as encodeForm will encode it as UTF-8
             kwargs['photo'] = imageData
         else:
             kwargs['photo'] = file(filename, "rb")
