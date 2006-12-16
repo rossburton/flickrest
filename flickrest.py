@@ -83,18 +83,21 @@ class Flickr:
         can be either strings or file-like objects.
         """
         boundary = mimetools.choose_boundary()
-        lines = [boundary]
+        lines = []
         for key, val in inputs.items():
-            header = 'Content-Disposition: form-data; name="%s"' % key
+            lines.append("--" + boundary.encode("utf-8"))
+            header = 'Content-Disposition: form-data; name="%s";' % key
             if hasattr(val, 'name'):
-                header += '; filename="%s"' % os.path.split(val.name)[1]
+                header += 'filename="%s";' % os.path.split(val.name)[1]
+                lines.append(header)
+                header = "Content-Type: application/octet-stream"
             lines.append(header)
+            lines.append("")
             if hasattr(val, 'read'):
                 lines.append(val.read())
             else:
                 lines.append(val.encode('utf-8'))
-            lines.append('')
-            lines.append(boundary)
+        lines.append("--" + boundary.encode("utf-8"))
         return (boundary, '\r\n'.join(lines))
     
     # TODO: add the other arguments
