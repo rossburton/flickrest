@@ -125,7 +125,7 @@ class Flickr:
                               headers=headers, postdata=form)
     
     def authenticate(self):
-        """Attemps to log in to Flickr.  This will open a web browser if
+        """Attempts to log in to Flickr.  This will open a web browser if
         required. The return value is a Twisted Deferred object that callbacks
         when authentication is complete."""
         filename = self.__getTokenFile()
