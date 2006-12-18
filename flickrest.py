@@ -159,8 +159,8 @@ class Flickr:
         completed.  If the result passed to the deferred callback is None, then
         the required authentication was locally cached and you are
         authenticated.  Otherwise the result is a dictionary, you should open
-        the URL specified by the 'url' key and once the user has confirmed they
-        have followed the instructions, pass the state to
+        the URL specified by the 'url' key and instruct the user to follow the
+        instructions.  Once that is done, pass the state to
         flickrest.authenticate_2()."""
 
         filename = self.__getTokenFile()

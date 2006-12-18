@@ -29,13 +29,15 @@ if __name__ == "__main__":
         #              tags="test green grass").addCallbacks(uploaded, error)
     
     def auth_open_url(state):
-        # If the URL to open is None, then we have cached authentication tokens
-        # available.
+        # If the state is None, then we have cached authentication tokens
+        # available, so call the connected callback.
         if state is None:
             connected(True)
         # Otherwise, open the URL and call authenticate_2 once the user has
         # authenticated us.
         else:
+            # In a GUI app, we'd pop up a dialog asking the user to press a
+            # button once they have authenticated.
             os.spawnlp(os.P_WAIT, "epiphany", "epiphany", "-p", state['url'])
             self.authenticate_2(state).addCallbacks(connected, error)
 
