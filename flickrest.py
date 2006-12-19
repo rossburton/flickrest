@@ -1,4 +1,4 @@
-import md5, os, mimetools, urllib
+import logging, md5, os, mimetools, urllib
 from twisted.internet import defer
 from twisted.python.failure import Failure
 from twisted.web import client
@@ -28,7 +28,8 @@ class Flickr:
         self.secret = secret
         self.perms = perms
         self.token = None
-
+        self.logger = logging.getLogger('flickrest')
+    
     def __repr__(self):
         return "<FlickREST>"
     
@@ -51,6 +52,7 @@ class Flickr:
     def __call(self, method, kwargs):
         kwargs["method"] = method
         self.__sign(kwargs)
+        self.logger.info("Calling %s" % method)
         return client.getPage(Flickr.endpoint, method="POST",
                               headers={"Content-Type": "application/x-www-form-urlencoded"},
                               postdata=urllib.urlencode(kwargs))
@@ -61,6 +63,7 @@ class Flickr:
             def proxy(method=method, **kwargs):
                 d = defer.Deferred()
                 def cb(data):
+                    self.logger.info("%s returned" % method)
                     xml = ElementTree.XML(data)
                     if xml.tag == "rsp" and xml.get("stat") == "ok":
                         d.callback(xml)
