@@ -3,6 +3,9 @@
 from twisted.internet import reactor
 from flickrest import Flickr
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 if __name__ == "__main__":
     flickr = Flickr("c53cebd15ed936073134cec858036f1d", "7db1b8ef68979779", "write")
 
@@ -37,9 +40,11 @@ if __name__ == "__main__":
         # authenticated us.
         else:
             # In a GUI app, we'd pop up a dialog asking the user to press a
-            # button once they have authenticated.
+            # button once they have authenticated. However, this blocking call
+            # will do the job here.
+            import os
             os.spawnlp(os.P_WAIT, "epiphany", "epiphany", "-p", state['url'])
-            self.authenticate_2(state).addCallbacks(connected, error)
-
+            flickr.authenticate_2(state).addCallbacks(connected, error)
+    
     flickr.authenticate_1().addCallbacks(auth_open_url, error)
     reactor.run()
