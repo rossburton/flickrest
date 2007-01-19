@@ -33,7 +33,7 @@ if __name__ == "__main__":
     def connected(authenticated):
         def gotInfo(p):
             print "Got photo title '%s'" % p.find("photo/title").text
-        flickr.photos_getInfo(photo_id="209423026").addCallbacks(gotInfo, error)
+        flickr.photos_getInfo(photo_id="351812586").addCallbacks(gotInfo, error)
         
         def gotFavs(p):
             print "Got favourites:"
