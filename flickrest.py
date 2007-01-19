@@ -90,7 +90,7 @@ class Flickr:
                     else:
                         # Fake an error in this case
                         d.errback(Failure(FlickrError(0, "Invalid response")))
-                self.__call(method, kwargs).addCallbacks(cb, lambda fault: d.errback(fault))
+                self.__call(method, kwargs).addCallbacks(cb, d.errback)
                 return d
             self.__methods[method] = proxy
         return self.__methods[method]
@@ -170,7 +170,7 @@ class Flickr:
             f.close()
             # Callback to the user
             d.callback(True)
-        self.auth_getToken(frob=state['frob']).addCallbacks(gotToken, lambda fault: d.errback(fault))
+        self.auth_getToken(frob=state['frob']).addCallbacks(gotToken, d.errback)
         return d
 
     def authenticate_1(self):
@@ -201,7 +201,7 @@ class Flickr:
             self.__sign(keys)
             url = "http://flickr.com/services/auth/?api_key=%(api_key)s&perms=%(perms)s&frob=%(frob)s&api_sig=%(api_sig)s" % keys
             d.callback({'url': url, 'frob': frob})
-        self.auth_getFrob().addCallbacks(gotFrob, lambda fault: d.errback(fault))
+        self.auth_getFrob().addCallbacks(gotFrob, d.errback)
         return d
 
     @staticmethod
