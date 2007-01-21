@@ -73,25 +73,23 @@ class Flickr:
         return client.getPage(Flickr.endpoint, method="POST",
                               headers={"Content-Type": "application/x-www-form-urlencoded"},
                               postdata=urllib.urlencode(kwargs))
-        
-    def __getattr__(self, method, **kwargs):
+    
+    def __getattr__(self, method):
         method = "flickr." + method.replace("_", ".")
         if not self.__methods.has_key(method):
             def proxy(method=method, **kwargs):
-                d = defer.Deferred()
                 def cb(data):
                     self.logger.info("%s returned" % method)
                     xml = ElementTree.XML(data)
                     if xml.tag == "rsp" and xml.get("stat") == "ok":
-                        d.callback(xml)
+                        return xml
                     elif xml.tag == "rsp" and xml.get("stat") == "fail":
                         err = xml.find("err")
-                        d.errback(Failure(FlickrError(err.get("code"), err.get("msg"))))
+                        raise FlickrError(err.get("code"), err.get("msg"))
                     else:
                         # Fake an error in this case
-                        d.errback(Failure(FlickrError(0, "Invalid response")))
-                self.__call(method, kwargs).addCallbacks(cb, d.errback)
-                return d
+                        raise FlickrError(0, "Invalid response")
+                return self.__call(method, kwargs).addCallback(cb)
             self.__methods[method] = proxy
         return self.__methods[method]
 
