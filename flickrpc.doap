@@ -13,7 +13,7 @@
   <description>A fully-featured asynchronous Flickr library, written using Python and Twisted.</description>
   <programming-language>Python</programming-language>
   <os>Linux</os>
-  <license rdf:resource="http://usefulinc.com/doap/licenses/gpl"/>
+  <license rdf:resource="http://usefulinc.com/doap/licenses/lgpl"/>
   <download-page rdf:resource="http://www.burtonini.com/blog/computers/postr"/>
   
   <category rdf:resource="http://burtonini.com/doap/category/graphics"/>
