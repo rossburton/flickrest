@@ -77,22 +77,23 @@ class Flickr:
                               headers={"Content-Type": "application/x-www-form-urlencoded"},
                               postdata=urllib.urlencode(kwargs))
     
+    def __cb(self, data, method):
+        self.logger.info("%s returned" % method)
+        xml = ElementTree.XML(data)
+        if xml.tag == "rsp" and xml.get("stat") == "ok":
+            return xml
+        elif xml.tag == "rsp" and xml.get("stat") == "fail":
+            err = xml.find("err")
+            raise FlickrError(err.get("code"), err.get("msg"))
+        else:
+            # Fake an error in this case
+            raise FlickrError(0, "Invalid response")
+    
     def __getattr__(self, method):
         method = "flickr." + method.replace("_", ".")
         if not self.__methods.has_key(method):
             def proxy(method=method, **kwargs):
-                def cb(data):
-                    self.logger.info("%s returned" % method)
-                    xml = ElementTree.XML(data)
-                    if xml.tag == "rsp" and xml.get("stat") == "ok":
-                        return xml
-                    elif xml.tag == "rsp" and xml.get("stat") == "fail":
-                        err = xml.find("err")
-                        raise FlickrError(err.get("code"), err.get("msg"))
-                    else:
-                        # Fake an error in this case
-                        raise FlickrError(0, "Invalid response")
-                return self.__call(method, kwargs).addCallback(cb)
+                return self.__call(method, kwargs).addCallback(self.__cb, method)
             self.__methods[method] = proxy
         return self.__methods[method]
 
@@ -154,19 +155,9 @@ class Flickr:
             "Content-Length": str(len(form))
             }
 
-        def cb(data):
-            self.logger.info("upload returned")
-            xml = ElementTree.XML(data)
-            if xml.tag == "rsp" and xml.get("stat") == "ok":
-                return xml
-            elif xml.tag == "rsp" and xml.get("stat") == "fail":
-                err = xml.find("err")
-                raise FlickrError(err.get("code"), err.get("msg"))
-            else:
-                # Fake an error in this case
-                raise FlickrError(0, "Invalid response")
+        self.logger.info("Calling upload")
         return client.getPage("http://api.flickr.com/services/upload/", method="POST",
-                              headers=headers, postdata=form).addCallback(cb)
+                              headers=headers, postdata=form).addCallback(self.__cb, "upload")
 
     def authenticate_2(self, state):
         def gotToken(e):
