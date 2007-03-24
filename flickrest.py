@@ -153,8 +153,20 @@ class Flickr:
             "Content-Type": "multipart/form-data; boundary=%s" % boundary,
             "Content-Length": str(len(form))
             }
+
+        def cb(data):
+            self.logger.info("upload returned")
+            xml = ElementTree.XML(data)
+            if xml.tag == "rsp" and xml.get("stat") == "ok":
+                return xml
+            elif xml.tag == "rsp" and xml.get("stat") == "fail":
+                err = xml.find("err")
+                raise FlickrError(err.get("code"), err.get("msg"))
+            else:
+                # Fake an error in this case
+                raise FlickrError(0, "Invalid response")
         return client.getPage("http://api.flickr.com/services/upload/", method="POST",
-                              headers=headers, postdata=form)
+                              headers=headers, postdata=form).addCallback(cb)
 
     def authenticate_2(self, state):
         def gotToken(e):
