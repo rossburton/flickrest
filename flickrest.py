@@ -62,12 +62,12 @@ class Flickr:
         # If authenticating we don't yet have a token
         if self.token:
             kwargs['auth_token'] = self.token
-        s = []
-        for key in kwargs.keys():
-            s.append("%s%s" % (key, kwargs[key]))
-        s.sort()
-        sig = md5.new(self.secret + ''.join(s)).hexdigest()
-        kwargs['api_sig'] = sig
+        # I know this is less efficient than working with lists, but this is
+        # much more readable.
+        sig = reduce(lambda sig, key: sig + key + str(kwargs[key]),
+                     sorted(kwargs.keys()),
+                     self.secret)
+        kwargs['api_sig'] = md5.new(sig).hexdigest()
 
     def __call(self, method, kwargs):
         kwargs["method"] = method
