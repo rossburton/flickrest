@@ -56,6 +56,12 @@ class Flickr:
     def __getTokenFile(self):
         """Get the filename that contains the authentication token for the API key"""
         return os.path.expanduser(os.path.join("~", ".flickr", self.api_key, "auth.xml"))
+
+    def clear_cached(self):
+        """Remove any cached information on disk."""
+        token = self.__getTokenFile()
+        if os.path.exists(token):
+            os.remove(token)
     
     def __sign(self, kwargs):
         kwargs['api_key'] = self.api_key
