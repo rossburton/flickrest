@@ -137,7 +137,7 @@ class Flickr:
             # Otherwise just hope it is string-like and encode it to
             # UTF-8. TODO: this breaks when val is binary data.
             else:
-                lines.append(val.encode('utf-8'))
+                lines.append(str(val).encode('utf-8'))
         # Add final boundary.
         lines.append("--" + boundary.encode("utf-8"))
         return (boundary, '\r\n'.join(lines))
