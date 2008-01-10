@@ -143,7 +143,7 @@ class Flickr:
         return (boundary, '\r\n'.join(lines))
     
     # TODO: add is_public, is_family, is_friends arguments
-    def upload(self, filename=None, imageData=None, title=None, desc=None, tags=None):
+    def upload(self, filename=None, imageData=None, title=None, desc=None, tags=None, search_hidden=False):
         # Sanity check the arguments
         if filename is None and imageData is None:
             raise ValueError("Need to pass either filename or imageData")
@@ -157,6 +157,8 @@ class Flickr:
             kwargs['description'] = desc
         if tags:
             kwargs['tags'] = tags
+        kwargs['hidden'] = search_hidden and 2 or 1 # Why Flickr, why?
+        print kwargs['hidden']
         self.__sign(kwargs)
         
         if imageData:
