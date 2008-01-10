@@ -158,7 +158,6 @@ class Flickr:
         if tags:
             kwargs['tags'] = tags
         kwargs['hidden'] = search_hidden and 2 or 1 # Why Flickr, why?
-        print kwargs['hidden']
         self.__sign(kwargs)
         
         if imageData:
