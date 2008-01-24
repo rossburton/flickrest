@@ -31,6 +31,7 @@ if __name__ == "__main__":
         reactor.stop()
     
     def connected(authenticated):
+        print "Full name: %s; Username: %s; NSID: %s" % (flickr.get_fullname(), flickr.get_username(), flickr.get_nsid())
         def gotInfo(p):
             print "Got photo title '%s'" % p.find("photo/title").text
         flickr.photos_getInfo(photo_id="351812586").addCallbacks(gotInfo, error)
