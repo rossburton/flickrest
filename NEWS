@@ -1,7 +1,0 @@
-Flickrpc 0.2
-============
-
-Re-license to LGPL.
-Don't use an intermediate deferred, instead chain them (thanks Andrew Bennetts)
-Clean up errback handlers (thanks Andrew Bennetts)
-Try to import xml.etree for Python 2.5
